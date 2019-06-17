@@ -28,6 +28,7 @@ use std::collections::HashMap;
 
 /// An in-memory key-value store.  Currently nothing more
 /// than a wrapper around a hash map.
+#[derive(Default)]
 pub struct KvStore {
     store: HashMap<String, String>
 }

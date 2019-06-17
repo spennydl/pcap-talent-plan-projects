@@ -1,6 +1,5 @@
 extern crate structopt;
 
-use kvs::KvStore;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]

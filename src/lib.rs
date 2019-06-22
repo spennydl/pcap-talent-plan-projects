@@ -24,65 +24,47 @@
 //! }
 //! 
 
-use std::collections::HashMap;
+extern crate failure;
+extern crate failure_derive;
 
-/// An in-memory key-value store.  Currently nothing more
-/// than a wrapper around a hash map.
-#[derive(Default)]
-pub struct KvStore {
-    store: HashMap<String, String>
+use std::io;
+
+use failure::Fail;
+
+mod store;
+pub use store::KvStore;
+
+mod log;
+
+/// Error type for the Kvs lib
+#[derive(Fail, Debug)]
+pub enum KvError {
+
+    /// Io error occurred
+    #[fail(display = "{}", _0)]
+    Io(#[cause] io::Error),
+
+    /// Serialization error
+    #[fail(display = "{}", _0)]
+    SerializationError(#[cause] Box<bincode::ErrorKind>),
+
+    /// Key Not Found
+    #[fail(display = "Key not found")]
+    NonExistentKey
 }
 
-
-impl KvStore {
-    /// Get a new KvStore.
-    /// 
-    /// ```rust
-    /// # use kvs::KvStore;
-    /// let mut kvs = KvStore::new();
-    /// ```
-    pub fn new() -> KvStore {
-        KvStore {
-            store: HashMap::new()
-        }
-    }
-
-    /// Set an item in a store.
-    /// ```rust
-    /// # use kvs::KvStore;
-    /// # let mut kvs = KvStore::new();
-    /// kvs.set("my_key".to_string(), "my_value".to_string());
-    /// ```
-    pub fn set(&mut self, key: String, val: String) {
-        self.store.insert(key, val);
-    }
-
-    /// Get a _copy_ of a value from the store.
-    /// ```rust
-    /// # use kvs::KvStore;
-    /// # let mut kvs = KvStore::new();
-    /// if let Some(value) = kvs.get("key".to_string()) {
-    ///     // process value
-    /// }
-    pub fn get(&self, key: String) -> Option<String> {
-        self.store.get(&key).cloned()
-    }
-
-    /// Remove an item from the store.
-    /// ```rust
-    /// # use kvs::KvStore;
-    /// # let mut kvs = KvStore::new();
-    /// kvs.remove("key".to_string());
-    /// ```
-    pub fn remove(&mut self, key: String) {
-        self.store.remove(&key);
+impl From<io::Error> for KvError {
+    fn from(err: io::Error) -> KvError {
+        KvError::Io(err)
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+impl From<Box<bincode::ErrorKind>> for KvError {
+    fn from(err: Box<bincode::ErrorKind>) -> KvError {
+        KvError::SerializationError(err)
     }
 }
+
+/// Result type.
+pub type Result<T> = std::result::Result<T, KvError>;
+

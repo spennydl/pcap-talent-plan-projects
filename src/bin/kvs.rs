@@ -2,6 +2,8 @@ extern crate structopt;
 
 use structopt::StructOpt;
 
+use kvs::{KvStore, Result, KvError};
+
 #[derive(StructOpt)]
 enum Kvs {
     #[structopt(name = "get")]
@@ -21,15 +23,29 @@ enum Kvs {
     }
 }
 
-fn main() {
+fn main() -> Result<()> {
     let opt = Kvs::from_args(); 
 
+    let mut store = KvStore::new()?;
+
     match opt {
-        Kvs::Get { key } => eprintln!("unimplemented"),
-        Kvs::Set { key, value } => eprintln!("unimplemented"),
-        Kvs::Remove { key } => eprintln!("unimplemented")
+        Kvs::Get { key } => {
+            let val = store.get(key)?;
+            println!("{}", val.unwrap_or("Key not found".to_string()));
+        },
+        Kvs::Set { key, value } => {
+            store.set(key, value)?;
+        },
+        Kvs::Remove { key } => {
+            match store.remove(key) {
+                Err(KvError::NonExistentKey) => {
+                    println!("Key not found");
+                    std::process::exit(1);
+                }
+                other => other?
+            }
+        }
     };
 
-    std::process::exit(1);
-
+    Ok(())
 }
